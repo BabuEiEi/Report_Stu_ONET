@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <style>
+        :root { --official-blue: #1e3a8a; --bg-color: #f8fafc; }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg-color); padding: 20px 0; color: #334155; }
+        .main-container { max-width: 1000px; margin: auto; position: relative; }
+        .official-card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid white; overflow: hidden; margin-bottom: 20px; }
+        
+        /* ปุ่มรายงานผล */
+        .dashboard-btn { 
+            position: absolute; 
+            top: 20px; 
+            right: 20px; 
+            background: white;
+            color: var(--official-blue);
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer; 
+            z-index: 1000; 
+            transition: all 0.3s ease; 
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dashboard-btn:hover { 
+            background-color: var(--official-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(30, 58, 138, 0.2);
+            border-color: var(--official-blue);
+        }
+
+        /* Custom Searchable Dropdown */
+        .custom-dropdown-btn {
+            background-color: #fff;
+            border: 1px solid #ced4da;
+            color: var(--official-blue);
+            font-weight: 600;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .custom-dropdown-btn:hover, .custom-dropdown-btn:focus {
+            background-color: #f8f9fa;
+            border-color: var(--official-blue);
+            color: var(--official-blue);
+        }
+        .dropdown-menu {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0;
+            border: 1px solid rgba(0,0,0,.15);
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+        }
+        .dropdown-search-container {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            z-index: 10;
+        }
+        .dropdown-item {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+        }
+        .dropdown-item:active, .dropdown-item.active {
+            background-color: var(--official-blue);
+            color: #fff;
+        }
+
+        /* Stats & Charts */
+        .stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid var(--official-blue); height: 100%; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--official-blue); }
+        .stat-label { font-size: 0.85rem; color: #64748b; }
+        
+        #dashboardSection { display: none; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+
+        /* General UI */
+        .logo-section { text-align: center; padding-top: 30px; padding-bottom: 10px; background-color: #fff; }
+        .logo-img { max-height: 100px; width: auto; }
+        .form-header { padding: 10px 20px 30px; text-align: center; border-bottom: 3px solid var(--official-blue); }
+        .form-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--official-blue); margin-bottom: 5px; }
+        .section-label { font-size: 0.9rem; font-weight: 700; color: var(--official-blue); text-transform: uppercase; margin: 25px 0 15px; display: flex; align-items: center; }
+        .section-label::after { content: ""; flex: 1; height: 1px; background: #cbd5e1; margin-left: 15px; }
+        .form-control, .form-select { border: 1px solid #cbd5e1; padding: 10px 15px; border-radius: 8px; }
+        .report-table thead th { background-color: #f1f5f9; font-size: 0.85rem; font-weight: 600; padding: 12px; vertical-align: middle; border-bottom: 2px solid #cbd5e1; }
+        .report-table tbody td { padding: 0 !important; }
+        .report-table .form-control { border: none; border-radius: 0; text-align: center; height: 55px; background: transparent; }
+        .total-box { background-color: var(--official-blue) !important; color: #fff !important; font-weight: 700; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; height: 55px; }
+        .btn-submit { background-color: var(--official-blue); border: none; padding: 12px 60px; border-radius: 50px; color: white; font-weight: 600; box-shadow: 0 4px 6px rgba(30, 58, 138, 0.2); }
+        .footer-credit { text-align: center; padding: 20px; font-size: 0.85rem; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; }
+
+        /* --- Print Styles --- */
+        @media print {
+            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print, .dashboard-btn, .btn, .footer-credit { display: none !important; }
+            .official-card { box-shadow: none; border: none; margin: 0; border-radius: 0; }
+            .main-container { max-width: 100%; width: 100%; margin: 0; padding: 0; }
+            #dashboardSection { display: block !important; }
+            #formSection { display: none !important; }
+            .card-body { padding: 0 !important; }
+            .chart-container { height: 250px; page-break-inside: avoid; }
+            .stat-card { border: 1px solid #eee; page-break-inside: avoid; }
+            /* ปรับขนาดหัวข้อตอนพิมพ์ให้เล็กลงนิดนึงจะได้ไม่ล้นบรรทัด */
+            #dashboardTitleText { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container main-container">
+    
+    <div id="mainDashboardBtn" class="dashboard-btn no-print" onclick="showDashboard()">
+        <i class="fa-solid fa-chart-pie"></i> รายงานผลผู้เข้าสอบ
+    </div>
+
+    <div id="formSection" class="official-card">
+        <div class="logo-section">
+            <img src="https://cdn.jsdelivr.net/gh/BabuEiEi/images/image%20-%20%E0%B9%81%E0%B8%81%E0%B9%89%E0%B9%84%E0%B8%82%E0%B9%81%E0%B8%A5%E0%B9%89%E0%B8%A7.png" alt="Logo" class="logo-img">
+        </div>
+        <div class="form-header">
+            <h1>รายงานจำนวนผู้เข้าสอบ O-NET</h1>
+            <p>ระบบการทดสอบดิจิทัล (Digital Testing) ระดับชั้นมัธยมศึกษาปีที่ 3</p>
+        </div>
+        <div class="card-body p-4 p-md-5 pt-2">
+            <form id="reportForm">
+                <div class="section-label">ข้อมูลพื้นฐาน</div>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">รอบที่สอบ</label>
+                        <select name="round" class="form-select" required>
+                            <option value="" selected disabled>-- กรุณาเลือกรอบที่สอบ --</option>
+                            <option value="รอบที่ 1 วันเสาร์ที่ 21 กุมภาพันธ์ 2569">รอบที่ 1 วันเสาร์ที่ 21 กุมภาพันธ์ 2569</option>
+                            <option value="รอบที่ 2 วันอาทิตย์ที่ 22 กุมภาพันธ์ 2569">รอบที่ 2 วันอาทิตย์ที่ 22 กุมภาพันธ์ 2569</option>
+                            <option value="รอบที่ 3 วันเสาร์ที่ 28 กุมภาพันธ์ 2569">รอบที่ 3 วันเสาร์ที่ 28 กุมภาพันธ์ 2569</option>
+                            <option value="รอบที่ 4 วันอาทิตย์ที่ 1 มีนาคม 2569">รอบที่ 4 วันอาทิตย์ที่ 1 มีนาคม 2569</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">โรงเรียน / สนามสอบ</label>
+                        <input class="form-control" list="schoolOptionsList" name="school" placeholder="พิมพ์เพื่อค้นหา..." required>
+                        <datalist id="schoolOptionsList">
+                            <option value="1065032010 ชาติตระการวิทยา">
+                            <option value="1065030068 บ้านน้ำจวง">
+                            <option value="1065030069 บ้านร่มเกล้า">
+                            <option value="1065032011 สวนเมี่ยงวิทยา">
+                            <option value="1065032003 นครชุมพิทยา รัชมังคลาภิเษก">
+                            <option value="1065032001 นครไทย">
+                            <option value="1065032004 นครบางยางพิทยาคม">
+                            <option value="1065032002 นาบัววิทยา">
+                            <option value="1065032005 บ่อโพธิ์วิทยา">
+                            <option value="3065100102 บางกลางท่าวพิทยาคม">
+                            <option value="1065032006 ยางโกลนวิทยา">
+                            <option value="1065032009 ราชประชานุเคราะห์ 23">
+                            <option value="3065100101 ศรีอินทราทิตย์พิทยาคม">
+                            <option value="1065022013 ไทรย้อยพิทยาคม">
+                            <option value="1065022011 เนินมะปรางศึกษาวิทยา">
+                            <option value="1065022012 วังโพรงพิทยาคม">
+                            <option value="1165100025 เอ.เจ.เนินมะปราง">
+                            <option value="1065022001 เนินกุ่มวิทยา">
+                            <option value="1065022002 บางกระทุ่มพิทยาคม">
+                            <option value="1065012012 ชุมแสงสงคราม (อุดรคณารักษ์อุปถัมภ์)">
+                            <option value="1065012011 บางระกำวิทยศึกษา">
+                            <option value="1065010119 บ้านปลักแรด">
+                            <option value="1065012013 ประชาสงเคราะห์วิทยา">
+                            <option value="1065032014 ดงประคำพิทยาคม">
+                            <option value="1065032012 พรหมพิรามวิทยา">
+                            <option value="1065032013 วังมะด่านพิทยาคม">
+                            <option value="1165100021 อินทุภูติพิทยา">
+                            <option value="3065100103 กีฬาองค์การบริหารส่วนจังหวัดพิษณุโลก">
+                            <option value="1065012003 จ่านกร้อง">
+                            <option value="1065012002 เฉลิมขวัญสตรี">
+                            <option value="1165100002 เซนต์นิโกลาส">
+                            <option value="1065012007 ดอนทองวิทยา">
+                            <option value="1065012004 เตรียมอุดมศึกษา ภาคเหนือ">
+                            <option value="1065012006 ท่าทองพิทยาคม">
+                            <option value="1065012008 บ้านกร่างวิทยาคม">
+                            <option value="1165100001 ผดุงราษฎร์">
+                            <option value="1065012001 พิษณุโลกพิทยาคม">
+                            <option value="1065012009 พุทธชินราชพิทยา">
+                            <option value="1465011101 มัธยมสาธิตมหาวิทยาลัยนเรศวร">
+                            <option value="1065012005 วังน้ำคู้ศึกษา">
+                            <option value="1065012010 วิทยาศาสตร์จุฬาภรณราชวิทยาลัย พิษณุโลก">
+                            <option value="7065010403 สาธิตวิทยาลัยสงฆ์พุทธชินราช">
+                            <option value="1065022006 ทรัพย์ไพรวัลย์วิทยาคม">
+                            <option value="1065022009 น้ำรินพิทยาคม">
+                            <option value="1065022008 เนินสะอาดวิทยาคม">
+                            <option value="1065022007 บ้านกลางพิทยาคม">
+                            <option value="1065022003 วังทองพิทยาคม">
+                            <option value="1065022010 วังพิกุลวิทยศึกษา">
+                            <option value="1065022004 สฤษดิ์เสนาพิทยาคม">
+                            <option value="1065022005 หนองพระพิทยา">
+                            <option value="1065032016 คันโช้งพิทยาคม">
+                            <option value="1065032015 วัดโบสถ์ศึกษา">
+                            <option value="1053012003 ตรอนตรีสินธุ์">
+                            <option value="1053012015 ทองแสนขันวิทยา">
+                            <option value="1053022002 ท่าปลาประชาอุทิศ">
+                            <option value="1053022004 น้ำปาดชนูปถัมภ์">
+                            <option value="1053022003 บ้านโคกวิทยาคม">
+                            <option value="1053012006 ดาราพิทยาคม">
+                            <option value="1053010121 นาอินวิทยาคม">
+                            <option value="1053012005 บ้านโคนพิทยา">
+                            <option value="1053012011 พิชัย">
+                            <option value="1053022001 ฟากท่าวิทยา">
+                            <option value="1053012002 เตรียมอุดมศึกษาน้อมเกล้า อุตรดิตถ์">
+                            <option value="1053012010 น้ำริดวิทยา">
+                            <option value="1453011201 สาธิตมหาวิทยาลัยราชภัฏอุตรดิตถ์">
+                            <option value="1053012008 แสนตอวิทยา">
+                            <option value="3053100101 องค์การบริหารส่วนจังหวัดอุตรดิตถ์">
+                            <option value="1053012001 อุตรดิตถ์">
+                            <option value="1053012004 อุตรดิตถ์ดรุณี">
+                            <option value="1053012014 ลับแลพิทยาคม">
+                            <option value="1053012012 ลับแลศรีวิทยา">
+                        </datalist>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold">ชื่อ-นามสกุล ผู้รายงานข้อมูล</label>
+                        <input type="text" name="reporter" class="form-control" placeholder="ระบุชื่อผู้รายงาน" required>
+                    </div>
+                </div>
+
+                <div class="section-label">ข้อมูลทางสถิติ</div>
+                <div class="table-responsive border rounded">
+                    <table class="table table-bordered mb-0 align-middle text-center report-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="width: 10%;">จำนวนห้อง</th>
+                                <th colspan="3">ผู้มีสิทธิ์ตามบัญชี สทศ. 2</th>
+                                <th colspan="2">นักเรียน Walk-in</th>
+                                <th rowspan="2" style="width: 15%; background-color: var(--official-blue); color: #fff;">รวมเข้าสอบ</th>
+                            </tr>
+                            <tr>
+                                <th>ทั้งหมด</th><th>มาสอบ</th><th>ขาดสอบ</th><th>มีเลขที่</th><th>ไม่มีเลขที่</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="number" name="rooms" class="form-control" value="0" required></td>
+                                <td><input type="number" id="v_total" name="totalEligible" class="form-control" value="0" oninput="doCalc()" required></td>
+                                <td><input type="number" id="v_att" name="attended" class="form-control" value="0" oninput="doCalc()" required></td>
+                                <td><input type="number" id="v_abs" name="absent" class="form-control" value="0" oninput="doCalc()"></td>
+                                <td><input type="number" id="v_w1" name="walkinWithId" class="form-control" value="0" oninput="doCalc()"></td>
+                                <td><input type="number" id="v_w2" name="walkinNoId" class="form-control" value="0" oninput="doCalc()"></td>
+                                <td id="v_grandTotal" class="total-box">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-5">
+                    <button type="submit" class="btn btn-submit" id="btnSubmit">บันทึกข้อมูลรายงาน</button>
+                </div>
+            </form>
+        </div>
+        <div class="footer-credit">พัฒนาโดย &copy; 2026 | นายภัทรพล แก้วเสนา ศึกษานิเทศก์ สพม.พิษณุโลก อุตรดิตถ์</div>
+    </div>
+
+    <div id="dashboardSection">
+        <div class="official-card">
+            <div class="form-header d-flex justify-content-between align-items-center bg-white">
+                <div class="text-start" style="flex-grow: 1; padding-right: 10px;">
+                    <h1 id="dashboardTitleText" class="mb-0 fs-4" style="line-height: 1.4;">
+                        <i class="fa-solid fa-chart-pie me-2"></i> สรุปภาพรวมการรายงาน
+                    </h1>
+                </div>
+                <div style="flex-shrink: 0;">
+                    <button class="btn btn-outline-dark btn-sm me-2 no-print" onclick="window.print()">
+                        <i class="fa-solid fa-print"></i> พิมพ์รายงาน PDF
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm no-print" onclick="closeAdmin()">
+                        <i class="fa-solid fa-arrow-left"></i> กลับหน้าฟอร์ม
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body p-4 bg-light">
+                <div class="row mb-4 gx-2 no-print">
+                    <div class="col-md-5 mb-2 mb-md-0">
+                         <div class="input-group">
+                            <span class="input-group-text bg-white fw-bold text-muted"><i class="fa-solid fa-calendar-days me-2"></i> รอบที่สอบ</span>
+                            <select id="roundFilter" class="form-select text-primary fw-bold" onchange="filterDashboard()">
+                                <option value="ALL">--- ดูทุกรอบ ---</option>
+                            <option value="รอบที่ 1 วันเสาร์ที่ 21 กุมภาพันธ์ 2569">รอบที่ 1 วันเสาร์ที่ 21 กุมภาพันธ์ 2569</option>
+                            <option value="รอบที่ 2 วันอาทิตย์ที่ 22 กุมภาพันธ์ 2569">รอบที่ 2 วันอาทิตย์ที่ 22 กุมภาพันธ์ 2569</option>
+                            <option value="รอบที่ 3 วันเสาร์ที่ 28 กุมภาพันธ์ 2569">รอบที่ 3 วันเสาร์ที่ 28 กุมภาพันธ์ 2569</option>
+                            <option value="รอบที่ 4 วันอาทิตย์ที่ 1 มีนาคม 2569">รอบที่ 4 วันอาทิตย์ที่ 1 มีนาคม 2569</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-7">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white fw-bold text-muted"><i class="fa-solid fa-school me-2"></i> โรงเรียน</span>
+                            
+                            <div class="dropdown flex-grow-1">
+                                <button class="btn custom-dropdown-btn w-100" type="button" id="schoolDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="selectedSchoolText">--- ดูทุกโรงเรียน ---</span>
+                                    <i class="fa-solid fa-chevron-down small text-muted"></i>
+                                </button>
+                                <div class="dropdown-menu w-100" aria-labelledby="schoolDropdownBtn">
+                                    <div class="dropdown-search-container">
+                                        <input type="text" class="form-control" id="schoolSearchInput" placeholder="พิมพ์ชื่อโรงเรียนเพื่อค้นหา..." oninput="filterSchoolList()">
+                                    </div>
+                                    <div id="schoolListContainer">
+                                        </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="schoolFilterValue" value="ALL">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-value" id="d_schools">0</div>
+                            <div class="stat-label">จำนวนรายงาน (ครั้ง)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" style="border-color: #0d6efd;">
+                            <div class="stat-value" id="d_attended" style="color: #0d6efd;">0</div>
+                            <div class="stat-label">เข้าสอบรวม (คน)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" style="border-color: #dc3545;">
+                            <div class="stat-value" id="d_absent" style="color: #dc3545;">0</div>
+                            <div class="stat-label">ขาดสอบรวม (คน)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card" style="border-color: #198754;">
+                            <div class="stat-value" id="d_walkin" style="color: #198754;">0</div>
+                            <div class="stat-label">Walk-in รวม (คน)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-8">
+                        <div class="card shadow-sm h-100 border-0">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold text-muted mb-3">เปรียบเทียบ: ผู้มีสิทธิ์ vs เข้าสอบ vs ขาดสอบ</h6>
+                                <div class="chart-container">
+                                    <canvas id="barChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm h-100 border-0">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold text-muted mb-3">สัดส่วนการเข้าสอบ (%)</h6>
+                                <div class="chart-container">
+                                    <canvas id="doughnutChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-bold py-3 text-secondary">
+                        <i class="fa-solid fa-list me-2"></i> รายการข้อมูล (เรียงล่าสุด)
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>เวลา</th>
+                                    <th>โรงเรียน</th>
+                                    <th>รอบที่</th>
+                                    <th class="text-center">เข้าสอบ</th>
+                                    <th class="text-center">ขาดสอบ</th>
+                                    <th class="text-center">Walk-in</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentTableBody">
+                                <tr><td colspan="6" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    Chart.register(ChartDataLabels);
+
+    let rawData = [];
+    let barChartInstance = null;
+    let doughnutChartInstance = null;
+    let allSchools = []; 
+
+    function doCalc() {
+        const total = Number(document.getElementById('v_total').value) || 0;
+        const att = Number(document.getElementById('v_att').value) || 0;
+        const w1 = Number(document.getElementById('v_w1').value) || 0;
+        const w2 = Number(document.getElementById('v_w2').value) || 0;
+        if (event && event.target.id !== 'v_abs') {
+            const absent = total - att;
+            document.getElementById('v_abs').value = absent > 0 ? absent : 0;
+        }
+        document.getElementById('v_grandTotal').innerText = (att + w1 + w2).toLocaleString();
+    }
+
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+        google.script.run.withSuccessHandler(res => {
+            btn.disabled = false;
+            btn.innerText = 'บันทึกข้อมูลรายงาน';
+            if(res.status === 'success') {
+                Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', confirmButtonColor: '#1e3a8a' });
+                this.reset();
+                this.querySelectorAll('input[type="number"]').forEach(input => input.value = 0);
+                document.getElementById('v_grandTotal').innerText = "0";
+            } else {
+                Swal.fire('ข้อผิดพลาด', res.message, 'error');
+            }
+        }).processForm(this);
+    });
+
+    // --- Dashboard Logic ---
+
+    function showDashboard() {
+        document.getElementById('formSection').style.display = 'none';
+        document.getElementById('dashboardSection').style.display = 'block';
+        document.getElementById('mainDashboardBtn').style.display = 'none'; 
+        fetchData();
+    }
+
+    function closeAdmin() {
+        document.getElementById('dashboardSection').style.display = 'none';
+        document.getElementById('formSection').style.display = 'block';
+        document.getElementById('mainDashboardBtn').style.display = 'flex'; 
+    }
+
+    function fetchData() {
+        google.script.run.withSuccessHandler(data => {
+            rawData = data; 
+            initSchoolDropdown(); 
+            filterDashboard(); 
+        }).getDashboardData();
+    }
+
+    // --- ระบบ Custom Dropdown โรงเรียน ---
+    
+    function initSchoolDropdown() {
+        const container = document.getElementById('schoolListContainer');
+        container.innerHTML = ''; 
+        
+        let allOption = document.createElement('div');
+        allOption.className = 'dropdown-item fw-bold text-primary';
+        allOption.innerText = '--- ดูทุกโรงเรียน ---';
+        allOption.onclick = function() { selectSchool('ALL', '--- ดูทุกโรงเรียน ---'); };
+        container.appendChild(allOption);
+
+        allSchools = [...new Set(rawData.map(row => row[2]))].sort();
+
+        if(allSchools.length === 0) {
+            let emptyItem = document.createElement('div');
+            emptyItem.className = 'dropdown-item text-muted text-center';
+            emptyItem.innerText = 'ยังไม่มีข้อมูลการรายงาน';
+            container.appendChild(emptyItem);
+        } else {
+            allSchools.forEach(school => {
+                let item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.innerText = school;
+                item.onclick = function() { selectSchool(school, school); };
+                container.appendChild(item);
+            });
+        }
+    }
+
+    function filterSchoolList() {
+        const searchText = document.getElementById('schoolSearchInput').value.toLowerCase();
+        const items = document.getElementById('schoolListContainer').getElementsByClassName('dropdown-item');
+        
+        for (let i = 0; i < items.length; i++) {
+            const itemText = items[i].innerText.toLowerCase();
+            if (itemText.includes(searchText) || itemText.includes('ดูทุกโรงเรียน')) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
+
+    function selectSchool(value, text) {
+        document.getElementById('schoolFilterValue').value = value;
+        document.getElementById('selectedSchoolText').innerText = text;
+        document.getElementById('schoolSearchInput').value = '';
+        filterSchoolList(); 
+        filterDashboard();
+    }
+
+    // --- End Custom Dropdown ---
+
+    function filterDashboard() {
+        const selectedSchool = document.getElementById('schoolFilterValue').value;
+        const selectedRound = document.getElementById('roundFilter').value;
+        const titleElement = document.getElementById('dashboardTitleText');
+
+        // --- Logic เปลี่ยนชื่อหัวข้อรายงาน ---
+        if (selectedSchool === 'ALL') {
+            titleElement.innerHTML = '<i class="fa-solid fa-chart-pie me-2"></i> สรุปภาพรวมการรายงานของสำนักงานเขตพื้นที่การศึกษามัธยมศึกษาพิษณุโลก อุตรดิตถ์';
+        } else {
+            // ตัดเลข 10 หลักหน้าออก (เช่น 1053... โรงเรียน... -> โรงเรียน...)
+            // ใช้ Regex: หาตัวเลข 10 ตัวแรกตามด้วยช่องว่าง แล้วแทนที่ด้วยค่าว่าง
+            const cleanSchoolName = selectedSchool.replace(/^\d{10}\s*/, '');
+            titleElement.innerHTML = '<i class="fa-solid fa-chart-pie me-2"></i> สรุปภาพรวมการรายงานของ' + cleanSchoolName;
+        }
+        
+        // --- กรองข้อมูล ---
+        const filteredData = rawData.filter(row => {
+            const matchSchool = (selectedSchool === 'ALL') || (row[2] === selectedSchool);
+            const matchRound = (selectedRound === 'ALL') || (row[1] === selectedRound);
+            return matchSchool && matchRound;
+        });
+
+        let sumEligible = 0, sumAttended = 0, sumAbsent = 0, sumWalkin = 0;
+        
+        filteredData.forEach(row => {
+            sumEligible += Number(row[5].replace(/,/g, ''));
+            sumAttended += Number(row[6].replace(/,/g, ''));
+            sumAbsent += Number(row[7].replace(/,/g, ''));
+            sumWalkin += Number(row[8].replace(/,/g, '')) + Number(row[9].replace(/,/g, ''));
+        });
+
+        document.getElementById('d_schools').innerText = filteredData.length.toLocaleString();
+        document.getElementById('d_attended').innerText = sumAttended.toLocaleString();
+        document.getElementById('d_absent').innerText = sumAbsent.toLocaleString();
+        document.getElementById('d_walkin').innerText = sumWalkin.toLocaleString();
+
+        updateTable(filteredData);
+        updateCharts(sumEligible, sumAttended, sumAbsent, sumWalkin);
+    }
+
+    function updateTable(data) {
+        const tbody = document.getElementById('recentTableBody');
+        tbody.innerHTML = '';
+        const recentData = [...data].reverse().slice(0, 10);
+
+        if (recentData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูล</td></tr>';
+            return;
+        }
+
+        recentData.forEach(row => {
+            let dateStr = new Date(row[0]).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+            let html = `<tr>
+                <td>${dateStr}</td>
+                <td class="text-truncate" style="max-width: 150px;" title="${row[2]}">${row[2]}</td>
+                <td class="small text-muted">${row[1]}</td>
+                <td class="text-center fw-bold text-primary">${row[6]}</td>
+                <td class="text-center text-danger">${row[7]}</td>
+                <td class="text-center text-success">${Number(row[8]) + Number(row[9])}</td>
+            </tr>`;
+            tbody.innerHTML += html;
+        });
+    }
+
+    function updateCharts(eligible, attended, absent, walkin) {
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        if (barChartInstance) barChartInstance.destroy();
+
+        barChartInstance = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['ผู้มีสิทธิ์สอบ', 'เข้าสอบจริง', 'ขาดสอบ'],
+                datasets: [{
+                    label: 'จำนวนนักเรียน (คน)',
+                    data: [eligible, attended, absent],
+                    backgroundColor: ['#6c757d', '#0d6efd', '#dc3545'],
+                    borderRadius: 5
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
+                        grace: '10%' 
+                    } 
+                },
+                plugins: { 
+                    legend: { display: false },
+                    datalabels: { anchor: 'end', align: 'top', formatter: Math.round, font: { weight: 'bold' }, color: '#333' }
+                } 
+            }
+        });
+
+        const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+        if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+        doughnutChartInstance = new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['เข้าสอบปกติ', 'Walk-in', 'ขาดสอบ'],
+                datasets: [{
+                    data: [attended - walkin, walkin, absent],
+                    backgroundColor: ['#0d6efd', '#198754', '#dc3545'],
+                    hoverOffset: 4
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { position: 'bottom' },
+                    datalabels: { 
+                        color: '#fff', 
+                        font: { weight: 'bold' },
+                        formatter: (value, ctx) => {
+                            let sum = 0;
+                            let dataArr = ctx.chart.data.datasets[0].data;
+                            dataArr.map(data => { sum += data; });
+                            if (sum === 0) return "0%";
+                            let percentage = (value * 100 / sum).toFixed(1) + "%";
+                            return percentage === "0.0%" ? "" : percentage;
+                        }
+                    }
+                } 
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
